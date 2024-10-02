@@ -1,6 +1,5 @@
 library(ggplot2)
 
-
 #' Performs Linear Regression model.
 #'
 #' @param formula
@@ -9,89 +8,145 @@ library(ggplot2)
 #' @return LinearRegression
 #' @export
 #'
-#' @examples
-#'
 linreg <- function(formula, data) {
+  lr <- LinearRegression$new(
+    formula = formula,
+    data = data,
+    results = NULL,
+    lm = NULL
+    )
 
-  lr <- LinearRegression$new(formula = formula, data = data)
   lr$fit()
   return(lr)
-
 }
 
-FittedParams <- setRefClass(
-  "FittedParams",
+#' Linear Regression Results
+#'
+#'
+#' @field B numeric. Regressions coefficients
+#' @field yhat matrix. The fitted values
+#' @field residuals matrix. Residuals
+#' @field residuals_variance numeric. The residuals variance
+#' @field degrees_of_freedom numeric. Degrees of freedom
+#' @field B_variance matrix. The variance of the regression coefficients
+#' @field t_values numeric. The t-values for each coefficient
+#' @field p_values numeric. The p-values for each coefficient
+LinearRegressionResults <- setRefClass(
+  "LinearRegressionResults",
 
   fields = list(
-    coefficients = "numeric",
-    fitted_values = "matrix",
+    B = "numeric",
+    yhat = "matrix",
     residuals = "matrix",
-    df_residual = "numeric",
-    sigma2 = "numeric",
-    var_beta = "matrix",
+    residuals_variance = "numeric",
+    degrees_of_freedom = "numeric",
+    B_variance = "matrix",
+    B_se = "numeric",
     t_values = "numeric",
     p_values = "numeric"
     )
+
 )
 
 
 LinearRegression <- setRefClass(
   "LinearRegression",
-  fields = list(formula = "formula", data = "data.frame", fitted_params = "FittedParams")
+  fields = list(
+    formula = "formula",
+    data = "data.frame",
+    results = "ANY",
+    lm = "ANY"
+  )
 )
-
 
 
 LinearRegression$methods(
 
+  fit = function() {
 
+    # Define X, y.
+    X <- model.matrix(formula, data)
+    y <- data[[all.vars(formula)[1]]]
 
-    fit = function() {
+    # yhat = XB , where B is the vector of coefficients.
+    B <- as.vector(solve(t(X) %*% X) %*% t(X) %*% y)
+    yhat <- X %*% B
 
-      X <- model.matrix(formula, data)
-      y <- data[[all.vars(formula)[1]]]
+    # Results.
+    residuals <- y - yhat
+    degrees_of_freedom <- nrow(X) - ncol(X)
+    residuals_variance <- as.numeric((t(residuals) %*% residuals) / degrees_of_freedom)
+    B_variance <- residuals_variance * solve(t(X) %*% X)
+    B_sd <- sqrt(diag(B_variance))
+    t_values <- B / B_sd
+    p_values <- 2 * pt(abs(t_values), degrees_of_freedom, lower.tail = FALSE)
 
-      beta <- as.vector(solve(t(X) %*% X) %*% t(X) %*% y)
-      fitted_values <- X %*% beta
-      residuals <- y - fitted_values
-      df_residual <- nrow(X) - ncol(X)
-      sigma2 <- as.numeric((t(residuals) %*% residuals) / df_residual)
-      var_beta <- sigma2 * solve(t(X) %*% X)
-      se_beta <- sqrt(diag(var_beta))
-      t_values <- beta / se_beta
-      p_values <- 2 * pt(abs(t_values), df_residual, lower.tail = FALSE)
-      coefficients <- beta
+    # Save result for lm
+    lm <<- lm(formula, data = data)
 
+    # Update `results` field.
+    results <<- LinearRegressionResults$new(
+      B = B,
+      yhat = yhat,
+      residuals = residuals,
+      degrees_of_freedom = degrees_of_freedom,
+      residuals_variance = residuals_variance,
+      B_variance = B_variance,
+      B_se = sqrt(diag(B_variance)),
+      t_values = t_values,
+      p_values = p_values
+    )
+  },
 
-      fitted_params <<- FittedParams$new(
-        coefficients = coefficients,
-        fitted_values = fitted_values,
-        residuals = residuals,
-        df_residual = df_residual,
-        sigma2 = sigma2,
-        var_beta = var_beta,
-        t_values = t_values,
-        p_values = p_values
-      )
-    },
+  get_named_coefs = function() {
+    B <- c(results$B)
+    names <- colnames(model.matrix(formula, data))
+    return(setNames(B, names))
+  },
 
-    coef = function() {
-      V <- c(lr$fitted_params$coefficients)
-      names <- colnames(model.matrix(formula, data))
-      return(setNames(V, names))
-    },
+  show = function() {
+    cat("Call: \n")
+    print(.self$formula)
+    cat("\n")
+    cat("Coefficients: \n")
+    print(get_named_coefs())
+  },
 
-   print = function() {
-     cat("Coefficients: \n")
-     return(coef())
+  get_residuals = function() .self$results$residuals,
+  get_predictions = function() .self$results$yhat,
+  get_summary = function()  {
 
-   },
+    summary_ <- cbind(
+      .self$results$B,
+      .self$results$B_se,
+      .self$results$t_values,
+      .self$results$p_values
+    )
+    colnames(summary_) <- c("B", "B_se", "t_values", "p_values")
+    return(summary_)
+  },
 
-   show = function() {
-     return(coef())
-   }
+  get_plot = function() {}
 
 )
+
+
+
+# Assign :class:`LinearRegression` to generic functions.
+
+residuals.LinearRegression <- function(x) x$get_residuals()
+
+predict.LinearRegression <- function(x) x$get_predictions()
+
+coef.LinearRegression <- function(x) x$get_named_coefs()
+
+summary.LinearRegression <- function(x) x$get_summary()
+
+plot.LinearRegression <- function(x) x$get_plot()
+
+
+
+
 
 
 
