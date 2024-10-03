@@ -1,36 +1,9 @@
 library(ggplot2)
 
-
 #' Generic function `pred`
 pred <- function(object, ...) UseMethod("pred")
 
-
-#' Performs Linear Regression model.
-#'
-#' @param formula
-#' an object of class "formula" (or one that can be coerced to that class):
-#' a symbolic description of the model to be fitted.
-#' The details of model specification are given under ‘Details’.
-#' @param data
-#' n optional data frame, list or environment
-#' (or object coercible by as.data.frame to a data frame) containing the
-#' variables in the model. If not found in data, the variables are taken from
-#' environment(formula),
-#'
-#' @return LinearRegression
-#' @export
-linreg <- function(formula, data) {
-  lr <- LinearRegression$new(
-    formula = formula,
-    data = data,
-    results = NULL
-  )
-
-  lr$fit()
-  return(lr)
-}
-
-#' Linear Regression Results
+#' linreg Results
 #'
 #' @field B numeric. Regressions coefficients
 #' @field yhat matrix. The fitted values
@@ -40,8 +13,8 @@ linreg <- function(formula, data) {
 #' @field B_variance matrix. The variance of the regression coefficients
 #' @field t_values numeric. The t-values for each coefficient
 #' @field p_values numeric. The p-values for each coefficient
-LinearRegressionResults <- setRefClass(
-  "LinearRegressionResults",
+linregResults <- setRefClass(
+  "linregResults",
 
   fields = list(
     B = "numeric",
@@ -56,20 +29,41 @@ LinearRegressionResults <- setRefClass(
   )
 )
 
-
-LinearRegression <- setRefClass(
-  "LinearRegression",
+#' Performs Linear Regression model.
+#'
+#' @param formula
+#' an object of class "formula" (or one that can be coerced to that class):
+#' a symbolic description of the model to be fitted.
+#' The details of model specification are given under ‘Details’.
+#' @param data
+#' n optional data frame, list or environment
+#' (or object coercible by as.data.frame to a data frame) containing the
+#' variables in the model. If not found in data, the variables are taken from
+#' environment(formula),
+#'
+#' @return linreg
+#' @examples
+#' data(iris)
+#' lr <- linreg$new(Petal.Length~Species, data = iris)
+#' @export
+linreg <- setRefClass(
+  "linreg",
   fields = list(
     formula = "formula",
     data = "data.frame",
-    results = "ANY"
+    results = "linregResults",
+    dataname = "ANY"
   )
 )
 
+linreg$methods(
 
-LinearRegression$methods(
+  initialize = function(formula, data) {
 
-  fit = function() {
+
+    .self$formula <- formula
+    .self$data <- data
+    .self$dataname <- deparse(substitute(data))
 
     # Define X, y.
     X <- model.matrix(formula, data)
@@ -88,9 +82,8 @@ LinearRegression$methods(
     t_values <- B / B_sd
     p_values <- 2 * pt(abs(t_values), degrees_of_freedom, lower.tail = FALSE)
 
-
     # Update `results` field.
-    results <<- LinearRegressionResults$new(
+    results <<- linregResults$new(
       B = B,
       yhat = yhat,
       residuals = residuals,
@@ -103,40 +96,38 @@ LinearRegression$methods(
     )
   },
 
+  print = function() .self$show(),
+
   show = function() {
-    cat("Call: \n")
-    print(.self$formula)
-    cat("\n")
-    cat("Coefficients: \n")
-    print(get_named_coefs())
+    cl <- call("linreg", formula = .self$formula, data = .self$dataname)
+    cat(paste(deparse(cl)))
   },
 
-  get_residuals = function() .self$results$residuals,
+  resid = function() .self$results$residuals,
 
-  get_predictions = function() .self$results$yhat,
+  pred = function() .self$results$yhat,
 
-  get_named_coefs = function() {
+  coef = function() {
     B <- c(results$B)
     names <- colnames(model.matrix(formula, data))
     return(setNames(B, names))
   },
 
-  get_summary = function()  {
+  summary = function()  {
 
-    summary_ <- cbind(
+    summ <- cbind(
       .self$results$B,
       .self$results$B_se,
       .self$results$t_values,
       .self$results$p_values
     )
-    colnames(summary_) <- c("B", "B_se", "t_values", "p_values")
-    return(summary_)
+    colnames(summ) <- c("B", "B_se", "t_values", "p_values")
+    base::print(summ)
   },
 
-  get_plot = function() {
+  plot = function() {
 
-
-    aes1 <- aes(x = .self$get_predictions(), y = .self$get_residuals())
+    aes1 <- aes(x = .self$pred(), y = .self$resid())
 
     p1 <- (
       ggplot(data = data, mapping = aes1) +
@@ -145,40 +136,31 @@ LinearRegression$methods(
       labs(title = "Residuals vs Fitted", x = "Fitted values", y = "Residuals")
       )
 
-    print(p1)
-
-    #aes2 <- aes(x= .self$get_predictions(), y = object$standard_residual)
-
-    #p2 <- (
-    #  ggplot(data = data, mapping = aes2) +
-    #  geom_point() +
-    #  stat_summary(fun = median, geom = "line", color = "red")+
-    #  labs(title = "Scale-Location", x = "Fitted values", y = "Standardized residuals")
-    #)
+    base::print(p1)
   }
 
 )
 
 # --------------------------------------------------------------------------
-# Adding methods for :class:`LinearRegression` to existing generic functions
+# Adding methods for :class:`linreg` to existing generic functions
 # --------------------------------------------------------------------------
 
-#' Returns residuals for :class:`LinearRegression` object.
+#' Returns residuals for :class:`linreg` object.
 #' @export
-residuals.LinearRegression <- function(object, ...) object$get_residuals()
+residuals.linreg <- function(object, ...) object$resid()
 
-#' Returns fitted values for :class:`LinearRegression` object.
+#' Returns fitted values for :class:`linreg` object.
 #' @export
-pred.LinearRegression <- function(object, ...) object$get_predictions()
+pred.linreg <- function(object, ...) object$pred()
 
-#' Returns estimated coefficients for :class:`LinearRegression` object.
+#' Returns estimated coefficients for :class:`linreg` object.
 #' @export
-coef.LinearRegression <- function(object, ...) object$get_named_coefs()
+coef.linreg <- function(object, ...) object$coef()
 
-#' Returns summary for :class:`LinearRegression` object.
+#' Returns summary for :class:`linreg` object.
 #' @export
-summary.LinearRegression <- function(object, ...) object$get_summary()
+summary.linreg <- function(object, ...) object$summary()
 
-#' Returns plot for :class:`LinearRegression` object.
+#' Returns plot for :class:`linreg` object.
 #' @export
-plot.LinearRegression <- function(object, ...) object$get_plot()
+plot.linreg <- function(object, ...) object$plot()
