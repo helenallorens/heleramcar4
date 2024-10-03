@@ -60,7 +60,6 @@ linreg$methods(
 
   initialize = function(formula, data) {
 
-
     .self$formula <- formula
     .self$data <- data
     .self$dataname <- deparse(substitute(data))
@@ -114,7 +113,6 @@ linreg$methods(
   },
 
   summary = function()  {
-
     summ <- cbind(
       .self$results$B,
       .self$results$B_se,
@@ -126,24 +124,20 @@ linreg$methods(
   },
 
   plot = function() {
-
     aes1 <- aes(x = .self$pred(), y = .self$resid())
-
     p1 <- (
       ggplot(data = data, mapping = aes1) +
       geom_point() +
       stat_summary(fun = median, geom = "line", color = "red")+
       labs(title = "Residuals vs Fitted", x = "Fitted values", y = "Residuals")
       )
-
     base::print(p1)
   }
-
 )
 
-# --------------------------------------------------------------------------
+# ----------------------------------------------------------------
 # Adding methods for :class:`linreg` to existing generic functions
-# --------------------------------------------------------------------------
+# ----------------------------------------------------------------
 
 #' Returns residuals for :class:`linreg` object.
 #' @export
