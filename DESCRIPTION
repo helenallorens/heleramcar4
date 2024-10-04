@@ -1,12 +1,14 @@
 Package: heleramcar4
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Implementation of a linear regression package
+Date: 2024-10-03
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Authors@R: c(
+    person("Helena", "Llorens", email = "hllor282@student.liu.se", role = c("aut", "cre")),
+    person("Carmen", "Rodríguez", email = "carro162@student.liu.se", role = "aut"),
+    person("Ramón", "Amézquita", email = "ramam120@student.liu.se", role = "aut"))
+Description: Implementation of a linear regression package.
+URL: https://github.com/helenallorens/heleramcar4/
 Encoding: UTF-8
 LazyData: true
 Suggests: 
@@ -16,3 +18,4 @@ Suggests:
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 RoxygenNote: 7.3.2
+License: MIT + file LICENSE
