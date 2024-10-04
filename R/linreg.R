@@ -52,7 +52,7 @@ linreg <- setRefClass(
     formula = "formula",
     data = "data.frame",
     results = "linregResults",
-    dataname = "ANY"
+    name = "ANY"
   )
 )
 
@@ -62,7 +62,7 @@ linreg$methods(
 
     .self$formula <- formula
     .self$data <- data
-    .self$dataname <- deparse(substitute(data))
+    .self$name <- deparse(substitute(data))
 
     # Define X, y.
     X <- model.matrix(formula, data)
@@ -98,9 +98,12 @@ linreg$methods(
   print = function() .self$show(),
 
   show = function() {
-    cl <- call("linreg", formula = .self$formula, data = .self$dataname)
-    cat(paste(deparse(cl)))
+    cat("\nCall:\n")
+    cat("linreg(formula = ", deparse(.self$formula), ", data = ", .self$name, ")\n\n", sep = "")
+    cat("Coefficients:\n")
+    base::print(.self$coef())
   },
+
 
   resid = function() .self$results$residuals,
 
@@ -113,14 +116,32 @@ linreg$methods(
   },
 
   summary = function()  {
-    summ <- cbind(
-      .self$results$B,
-      .self$results$B_se,
-      .self$results$t_values,
-      .self$results$p_values
+
+    digits <- 3
+    rdf <- .self$results$degrees_of_freedom
+    rse <- sqrt(.self$results$residuals_variance)
+
+
+    # Generate summ data.frame.
+    summ <- data.frame(
+      A=.self$results$B,
+      B=.self$results$B_se,
+      C=.self$results$t_values,
+      D=.self$results$p_values
     )
-    colnames(summ) <- c("B", "B_se", "t_values", "p_values")
+    colnames(summ) <- c("Estimate", "Std. Error", "t value", "Pr(>|t|)")
+
+    # Add p-values.
+    pv <- as.vector(summ[, "Pr(>|t|)"])
+    Signif <- symnum(pv, corr = FALSE, na = FALSE,
+                     cutpoints = c(0,  .001,.01,.05, .1, 1),
+                     symbols   =  c("***","**","*","."," "))
+    summ <- cbind(summ, Signif=format(Signif))
+
     base::print(summ)
+    cat("Residual standard error:",
+        format(signif(rse, digits)), "on", rdf, "degrees of freedom"
+      )
   },
 
   plot = function() {
@@ -130,7 +151,7 @@ linreg$methods(
       geom_point() +
       stat_summary(fun = median, geom = "line", color = "red")+
       labs(title = "Residuals vs Fitted", x = "Fitted values", y = "Residuals")
-      )
+    )
     base::print(p1)
   }
 )
