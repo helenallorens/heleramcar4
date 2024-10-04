@@ -4,7 +4,12 @@
 \alias{coef.linreg}
 \title{Returns estimated coefficients for :class:`linreg` object.}
 \usage{
-\method{coef}{linreg}(object, ...)
+\method{coef}{linreg}(x, ...)
+}
+\arguments{
+\item{x}{linreg object}
+
+\item{...}{signature compatibility arguments}
 }
 \description{
 Returns estimated coefficients for :class:`linreg` object.

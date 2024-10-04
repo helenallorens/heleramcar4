@@ -15,9 +15,6 @@ The details of model specification are given under ‘Details’.}
 variables in the model. If not found in data, the variables are taken from
 environment(formula),}
 }
-\value{
-linreg
-}
 \description{
 Performs Linear Regression model.
 }

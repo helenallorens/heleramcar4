@@ -6,6 +6,11 @@
 \usage{
 \method{summary}{linreg}(object, ...)
 }
+\arguments{
+\item{object}{linreg object}
+
+\item{...}{signature compatibility arguments}
+}
 \description{
 Returns summary for :class:`linreg` object.
 }

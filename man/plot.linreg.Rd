@@ -4,7 +4,12 @@
 \alias{plot.linreg}
 \title{Returns plot for :class:`linreg` object.}
 \usage{
-\method{plot}{linreg}(object, ...)
+\method{plot}{linreg}(x, ...)
+}
+\arguments{
+\item{x}{linreg object}
+
+\item{...}{signature compatibility arguments}
 }
 \description{
 Returns plot for :class:`linreg` object.

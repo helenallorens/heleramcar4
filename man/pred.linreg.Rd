@@ -4,7 +4,12 @@
 \alias{pred.linreg}
 \title{Returns fitted values for :class:`linreg` object.}
 \usage{
-\method{pred}{linreg}(object, ...)
+\method{pred}{linreg}(x, ...)
+}
+\arguments{
+\item{x}{linreg object}
+
+\item{...}{signature compatibility arguments}
 }
 \description{
 Returns fitted values for :class:`linreg` object.

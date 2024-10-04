@@ -4,7 +4,12 @@
 \alias{pred}
 \title{Generic function `pred`}
 \usage{
-pred(object, ...)
+pred(x, ...)
+}
+\arguments{
+\item{x}{object}
+
+\item{...}{signature compatibility arguments}
 }
 \description{
 Generic function `pred`

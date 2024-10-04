@@ -1,7 +1,12 @@
 library(ggplot2)
 
 #' Generic function `pred`
-pred <- function(object, ...) UseMethod("pred")
+#'
+#' @param x object
+#' @param ... signature compatibility arguments
+#' @export
+#' @export
+pred <- function(x, ...) UseMethod("pred")
 
 #' linreg Results
 #'
@@ -41,11 +46,13 @@ linregResults <- setRefClass(
 #' variables in the model. If not found in data, the variables are taken from
 #' environment(formula),
 #'
-#' @return linreg
 #' @examples
 #' data(iris)
 #' lr <- linreg$new(Petal.Length~Species, data = iris)
-#' @export
+#' @import methods
+#' @importFrom ggplot2 ggplot aes geom_bar stat_summary labs
+#' @export linreg
+#' @exportClass linreg
 linreg <- setRefClass(
   "linreg",
   fields = list(
@@ -58,6 +65,7 @@ linreg <- setRefClass(
 
 linreg$methods(
 
+  #' @export
   initialize = function(formula, data) {
 
     .self$formula <- formula
@@ -145,12 +153,12 @@ linreg$methods(
   },
 
   plot = function() {
-    aes1 <- aes(x = .self$pred(), y = .self$resid())
+    aes1 <- ggplot2::aes(x = .self$pred(), y = .self$resid())
     p1 <- (
-      ggplot(data = data, mapping = aes1) +
-      geom_point() +
-      stat_summary(fun = median, geom = "line", color = "red")+
-      labs(title = "Residuals vs Fitted", x = "Fitted values", y = "Residuals")
+      ggplot2::ggplot(data = data, mapping = aes1) +
+      ggplot2::geom_point() +
+      ggplot2::stat_summary(fun = median, geom = "line", color = "red")+
+      ggplot2::labs(title = "Residuals vs Fitted", x = "Fitted values", y = "Residuals")
     )
     base::print(p1)
   }
@@ -161,21 +169,36 @@ linreg$methods(
 # ----------------------------------------------------------------
 
 #' Returns residuals for :class:`linreg` object.
+#'
+#' @param x linreg object
+#' @param ... signature compatibility arguments
 #' @export
-residuals.linreg <- function(object, ...) object$resid()
+residuals.linreg <- function(x, ...) x$resid()
 
 #' Returns fitted values for :class:`linreg` object.
+#'
+#' @param x linreg object
+#' @param ... signature compatibility arguments
 #' @export
-pred.linreg <- function(object, ...) object$pred()
+pred.linreg <- function(x, ...) x$pred()
 
 #' Returns estimated coefficients for :class:`linreg` object.
+#'
+#' @param x linreg object
+#' @param ... signature compatibility arguments
 #' @export
-coef.linreg <- function(object, ...) object$coef()
+coef.linreg <- function(x, ...) x$coef()
 
 #' Returns summary for :class:`linreg` object.
+#'
+#' @param object linreg object
+#' @param ... signature compatibility arguments
 #' @export
 summary.linreg <- function(object, ...) object$summary()
 
 #' Returns plot for :class:`linreg` object.
+#'
+#' @param x linreg object
+#' @param ... signature compatibility arguments
 #' @export
-plot.linreg <- function(object, ...) object$plot()
+plot.linreg <- function(x, ...) x$plot()

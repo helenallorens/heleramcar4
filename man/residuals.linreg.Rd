@@ -4,7 +4,12 @@
 \alias{residuals.linreg}
 \title{Returns residuals for :class:`linreg` object.}
 \usage{
-\method{residuals}{linreg}(object, ...)
+\method{residuals}{linreg}(x, ...)
+}
+\arguments{
+\item{x}{linreg object}
+
+\item{...}{signature compatibility arguments}
 }
 \description{
 Returns residuals for :class:`linreg` object.
