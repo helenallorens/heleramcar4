@@ -18,4 +18,77 @@ knitr::opts_chunk$set(
 library(heleramcar4)
 ```
 
-Escribir aqui
+ ----------------------------------------------------------------------
+ Vignette: A Simple Implementation of Linear Regression in R
+ ----------------------------------------------------------------------
+
+This vignette demonstrates the usage of a simple linear regression package
+implemented in R. The package allows users to fit a linear regression model,
+get residuals, predictions, and coefficients, as well as generate plots for
+model diagnostics.
+
+### Introduction
+This vignette demonstrates the usage of a simple linear regression package implemented in R. 
+The package allows users to fit a linear regression model, get residuals, predictions, and coefficients, as well as generate plots for model diagnostics.
+
+### Loading the Package
+The package requires `ggplot2` for generating diagnostic plots. Make sure you have `ggplot2` installed:
+
+```{r install-ggplot2, eval=FALSE}
+install.packages("ggplot2")
+```
+
+Once the package is installed, you can load it using:
+
+```{r load-library, echo=TRUE, eval=FALSE}
+library(ggplot2)
+```
+
+### Linear Regression Implementation
+The linear regression is implemented using `RefClass` objects, which allow us to define a class-like structure in R. 
+The package provides the following main components:
+
+- `LinearRegression`: The main class that fits the linear regression model.
+- `LinearRegressionResults`: Stores the results of the regression (coefficients, residuals, fitted values, etc.).
+- Several generic functions for accessing residuals, predictions, coefficients, and model summaries.
+
+### Creating a Linear Regression Model
+To fit a linear regression model, you can use the function `linreg()`. 
+This function takes a formula and a data frame as input and returns a `LinearRegression` object.
+
+
+
+Fitting a linear regression model:
+
+```{r fit-model, echo=TRUE}
+model <- linreg(y ~ x, data)
+```
+
+### Model Coefficients
+To get the coefficients of the fitted model, you can use the `coef()` function.
+
+```{r get-coefs, echo=TRUE}
+coef(model)
+```
+
+### Model Residuals
+The residuals from the model can be accessed using the `residuals()` function.
+
+```{r get-residuals, echo=TRUE}
+residuals(model)
+```
+
+### Model Predictions
+You can get the predicted (fitted) values using the `pred()` function.
+
+```{r get-predictions, echo=TRUE}
+pred(model)
+```
+
+### Model Summary
+The `summary()` function returns a detailed summary of the model, including coefficients, standard errors, t-values, and p-values.
+
+```{r get-summary, echo=TRUE}
+ummary(model)
+```
+
