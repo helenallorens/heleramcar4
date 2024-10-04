@@ -4,7 +4,7 @@
 
 # 732A94 Advanced Programming in R - Linköping University
 
-Implementation of a linear regression package.
+Computer Lab 4: Implementation of a linear regression package
 
 # Names - Student Id
 
