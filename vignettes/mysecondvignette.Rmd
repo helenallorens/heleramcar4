@@ -1,0 +1,19 @@
+---
+title: "mysecondvignette"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{mysecondvignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(heleramcar4)
+```
