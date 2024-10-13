@@ -35,7 +35,6 @@ XyRegressor <- setRefClass(
 
 XyRegressor$methods(
 
-
   #' Predicts input data X.
   #'
   #' @param X Input data
@@ -100,7 +99,6 @@ LinearRegressor <- setRefClass(
 
 
 LinearRegressor$methods(
-
 
   #' Fits Linear Regressor to X and y.
   #'
