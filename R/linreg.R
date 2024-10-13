@@ -1,38 +1,158 @@
-library(ggplot2)
-
 #' Generic function `pred`
 #'
 #' @param x object
 #' @param ... signature compatibility arguments
 #' @export
-#' @export
 pred <- function(x, ...) UseMethod("pred")
 
-#' linreg Results
-#'
-#' @field B numeric. Regressions coefficients
-#' @field yhat matrix. The fitted values
-#' @field residuals matrix. Residuals
-#' @field residuals_variance numeric. The residuals variance
-#' @field degrees_of_freedom numeric. Degrees of freedom
-#' @field B_variance matrix. The variance of the regression coefficients
-#' @field t_values numeric. The t-values for each coefficient
-#' @field p_values numeric. The p-values for each coefficient
-linregResults <- setRefClass(
-  "linregResults",
 
-  fields = list(
-    B = "numeric",
-    yhat = "matrix",
-    residuals = "matrix",
-    residuals_variance = "numeric",
-    degrees_of_freedom = "numeric",
-    B_variance = "matrix",
-    B_se = "numeric",
-    t_values = "numeric",
-    p_values = "numeric"
-  )
+#' Auxiliary function for getting X and y.
+#'
+#' @param formula an object of class "formula" .
+#' @param data  a data.frame,
+#'
+#' @return list of X and y arrays.
+get_X_y <- function(formula, data) {
+  X <- model.matrix(formula, data)
+  y <- data[[all.vars(formula)[1]]]
+
+  return(list(X = X, y = y))
+}
+
+
+# ----------------------------- Xy REGRESSORS -----------------------------
+
+#' Base XyRegressor class
+#'
+#' Note: This class should not be used directly. Use derived classes instead.
+#'
+#' @field coef_ numeric.
+XyRegressor <- setRefClass(
+  "XyRegressor",
+  fields = list(coef_ = "numeric")
 )
+
+
+XyRegressor$methods(
+
+
+  #' Predicts input data X.
+  #'
+  #' @param X Input data
+  #' @return Predicted values
+  #' @export
+  predict = function(X) {
+    X %*% .self$coef_
+    }
+)
+
+
+#' Ridge Regressor.
+#'
+#'
+#' @field coef_ numeric.
+#' @field lambda numeric.
+#'
+#' @import methods
+#' @export RidgeRegressor
+#' @exportClass RidgeRegressor
+RidgeRegressor <- setRefClass(
+  "RidgeRegressor",
+  fields = list(coef_ = "numeric", lambda = "numeric"),
+  contains = "XyRegressor"
+  )
+
+
+RidgeRegressor$methods(
+
+  #' @export
+  initialize = function(lambda = 1) {
+    .self$lambda <- lambda
+  },
+
+  #' Fits Ridge Regressor to X and y.
+  #'
+  #' @param X Design matrix
+  #' @param y Target values
+  #'
+  #' @export
+  fit = function(X, y) {
+    .self$coef_ <- (
+      as.vector(solve(t(X) %*% X + diag(.self$lambda, ncol(X))) %*% t(X) %*% y)
+      )
+  }
+)
+
+
+#' Linear Regressor.
+#'
+#'
+#' @field coef_ numeric.
+#'
+#' @import methods
+#' @export LinearRegressor
+#' @exportClass LinearRegressor
+LinearRegressor <- setRefClass(
+  "LinearRegressor",
+  fields = list(coef_ = "numeric"),
+  contains = "XyRegressor"
+)
+
+
+LinearRegressor$methods(
+
+
+  #' Fits Linear Regressor to X and y.
+  #'
+  #' @param X Design matrix
+  #' @param y Target values
+  #'
+  #' @export
+  fit = function(X, y) {
+    .self$coef_ <- as.vector(solve(t(X) %*% X) %*% t(X) %*% y)
+  }
+)
+
+
+# ----------------------------- FORMULA REGRESSORS -----------------------------
+
+
+#' Base FormulaRegressor class.
+#'
+#' Note: This class should not be used directly. Use derived classes instead.
+#'
+#' @field formula formula object
+#' @field Xy list with X and y arrays
+#' @field regressor a :class:`Regressor` object
+FormulaRegressor <- setRefClass(
+  "FormulaRegressor",
+  fields = list(
+    formula = "formula", Xy = "list", datarg = "character",
+    regressor = "Regressor"
+    )
+  )
+
+
+FormulaRegressor$methods(
+
+  initialize = function(formula, data) {
+
+    .self$formula <- formula
+    .self$Xy <- get_X_y(formula, data)
+    .self$datarg <- deparse(substitute(data))
+
+  },
+
+  show = function() {
+
+    cat("\nCall:\n")
+    cat(class(.self), "(formula = ", deparse(.self$formula), ", data = ", .self$datarg, ")\n\n", sep = "")
+    cat("Coefficients:\n")
+    base::print(.self$regressor$coef_)
+
+  }
+)
+
 
 #' Performs Linear Regression model.
 #'
@@ -41,132 +161,72 @@ linregResults <- setRefClass(
 #' a symbolic description of the model to be fitted.
 #' The details of model specification are given under ‘Details’.
 #' @param data
-#' n optional data frame, list or environment
+#' data frame, list or environment
 #' (or object coercible by as.data.frame to a data frame) containing the
 #' variables in the model. If not found in data, the variables are taken from
 #' environment(formula),
-#'
 #' @examples
-#' data(iris)
-#' lr <- linreg$new(Petal.Length~Species, data = iris)
+#' lr <- linreg(Petal.Length~Species, data = iris)
+#'
 #' @import methods
-#' @importFrom ggplot2 ggplot aes geom_bar stat_summary labs
 #' @export linreg
 #' @exportClass linreg
-linreg <- setRefClass(
-  "linreg",
-  fields = list(
-    formula = "formula",
-    data = "data.frame",
-    results = "linregResults",
-    name = "ANY"
-  )
-)
+linreg <- setRefClass("linreg", contains = "FormulaRegressor")
 
 linreg$methods(
 
   #' @export
   initialize = function(formula, data) {
 
-    .self$formula <- formula
-    .self$data <- data
-    .self$name <- deparse(substitute(data))
+    callSuper(formula = formula, data = data)
+    .self$regressor <- LinearRegressor()
+    .self$regressor$fit(X = .self$Xy$X, y = .self$Xy$y)
 
-    # Define X, y.
-    X <- model.matrix(formula, data)
-    y <- data[[all.vars(formula)[1]]]
-
-    # yhat = XB , where B is the vector of coefficients.
-    B <- as.vector(solve(t(X) %*% X) %*% t(X) %*% y)
-    yhat <- X %*% B
-
-    # Results.
-    residuals <- y - yhat
-    degrees_of_freedom <- nrow(X) - ncol(X)
-    residuals_variance <- as.numeric((t(residuals) %*% residuals) / degrees_of_freedom)
-    B_variance <- residuals_variance * solve(t(X) %*% X)
-    B_sd <- sqrt(diag(B_variance))
-    t_values <- B / B_sd
-    p_values <- 2 * pt(abs(t_values), degrees_of_freedom, lower.tail = FALSE)
-
-    # Update `results` field.
-    results <<- linregResults$new(
-      B = B,
-      yhat = yhat,
-      residuals = residuals,
-      degrees_of_freedom = degrees_of_freedom,
-      residuals_variance = residuals_variance,
-      B_variance = B_variance,
-      B_se = sqrt(diag(B_variance)),
-      t_values = t_values,
-      p_values = p_values
-    )
-  },
-
-  print = function() .self$show(),
-
-  show = function() {
-    cat("\nCall:\n")
-    cat("linreg(formula = ", deparse(.self$formula), ", data = ", .self$name, ")\n\n", sep = "")
-    cat("Coefficients:\n")
-    base::print(.self$coef())
-  },
-
-
-  resid = function() .self$results$residuals,
-
-  pred = function() .self$results$yhat,
-
-  coef = function() {
-    B <- c(results$B)
-    names <- colnames(model.matrix(formula, data))
-    return(setNames(B, names))
-  },
-
-  summary = function()  {
-
-    digits <- 3
-    rdf <- .self$results$degrees_of_freedom
-    rse <- sqrt(.self$results$residuals_variance)
-
-
-    # Generate summ data.frame.
-    summ <- data.frame(
-      A=.self$results$B,
-      B=.self$results$B_se,
-      C=.self$results$t_values,
-      D=.self$results$p_values
-    )
-    colnames(summ) <- c("Estimate", "Std. Error", "t value", "Pr(>|t|)")
-
-    # Add p-values.
-    pv <- as.vector(summ[, "Pr(>|t|)"])
-    Signif <- symnum(pv, corr = FALSE, na = FALSE,
-                     cutpoints = c(0,  .001,.01,.05, .1, 1),
-                     symbols   =  c("***","**","*","."," "))
-    summ <- cbind(summ, Signif=format(Signif))
-
-    base::print(summ)
-    cat("Residual standard error:",
-        format(signif(rse, digits)), "on", rdf, "degrees of freedom"
-      )
-  },
-
-  plot = function() {
-    aes1 <- ggplot2::aes(x = .self$pred(), y = .self$resid())
-    p1 <- (
-      ggplot2::ggplot(data = data, mapping = aes1) +
-      ggplot2::geom_point() +
-      ggplot2::stat_summary(fun = median, geom = "line", color = "red")+
-      ggplot2::labs(title = "Residuals vs Fitted", x = "Fitted values", y = "Residuals")
-    )
-    base::print(p1)
   }
+
 )
 
-# ----------------------------------------------------------------
-# Adding methods for :class:`linreg` to existing generic functions
-# ----------------------------------------------------------------
+
+#' Performs Ridge Regression model.
+#'
+#' @param formula
+#' an object of class "formula" (or one that can be coerced to that class):
+#' a symbolic description of the model to be fitted.
+#' The details of model specification are given under ‘Details’.
+#' @param data
+#' data frame, list or environment
+#' (or object coercible by as.data.frame to a data frame) containing the
+#' variables in the model. If not found in data, the variables are taken from
+#' environment(formula),
+#' @examples
+#' data(iris)
+#' ridge <- ridgereg(Petal.Length~Species, data = iris)
+#'
+#' @import methods
+#' @export ridgereg
+#' @exportClass ridgereg
+ridgereg <- setRefClass("ridgereg", contains = "FormulaRegressor")
+
+ridgereg$methods(
+
+  #' @export
+  initialize = function(formula, data, lambda = 1) {
+
+    callSuper(formula = formula, data = data)
+    .self$regressor <- RidgeRegressor(lambda = lambda)
+    .self$regressor$fit(X = .self$Xy$X, y = .self$Xy$y)
+
+  }
+
+)
+
+
+
+
+
+# --------------------------------------------------------------------------
+# Adding methods for :class:`FormulaRegressor` to existing generic functions
+# --------------------------------------------------------------------------
 
 #' Returns residuals for :class:`linreg` object.
 #'
@@ -188,17 +248,3 @@ pred.linreg <- function(x, ...) x$pred()
 #' @param ... signature compatibility arguments
 #' @export
 coef.linreg <- function(x, ...) x$coef()
-
-#' Returns summary for :class:`linreg` object.
-#'
-#' @param object linreg object
-#' @param ... signature compatibility arguments
-#' @export
-summary.linreg <- function(object, ...) object$summary()
-
-#' Returns plot for :class:`linreg` object.
-#'
-#' @param x linreg object
-#' @param ... signature compatibility arguments
-#' @export
-plot.linreg <- function(x, ...) x$plot()
