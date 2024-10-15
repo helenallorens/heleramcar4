@@ -217,32 +217,3 @@ ridgereg$methods(
   }
 
 )
-
-
-
-
-
-# --------------------------------------------------------------------------
-# Adding methods for :class:`FormulaRegressor` to existing generic functions
-# --------------------------------------------------------------------------
-
-#' Returns residuals for :class:`linreg` object.
-#'
-#' @param x linreg object
-#' @param ... signature compatibility arguments
-#' @export
-residuals.linreg <- function(x, ...) x$resid()
-
-#' Returns fitted values for :class:`linreg` object.
-#'
-#' @param x linreg object
-#' @param ... signature compatibility arguments
-#' @export
-pred.linreg <- function(x, ...) x$pred()
-
-#' Returns estimated coefficients for :class:`linreg` object.
-#'
-#' @param x linreg object
-#' @param ... signature compatibility arguments
-#' @export
-coef.linreg <- function(x, ...) x$coef()
