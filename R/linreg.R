@@ -1,10 +1,3 @@
-#' Generic function `pred`
-#'
-#' @param x object
-#' @param ... signature compatibility arguments
-#' @export
-pred <- function(x, ...) UseMethod("pred")
-
 
 #' Auxiliary function for getting X and y.
 #'
@@ -32,7 +25,6 @@ XyRegressor <- setRefClass(
   fields = list(coef_ = "numeric")
 )
 
-
 XyRegressor$methods(
 
   #' Predicts input data X.
@@ -44,7 +36,6 @@ XyRegressor$methods(
     X %*% .self$coef_
     }
 )
-
 
 #' Ridge Regressor.
 #'
@@ -121,33 +112,42 @@ LinearRegressor$methods(
 #'
 #' @field formula formula object
 #' @field Xy list with X and y arrays
-#' @field regressor a :class:`Regressor` object
+#' @field regressor a :class:`XyRegressor` object
 FormulaRegressor <- setRefClass(
   "FormulaRegressor",
   fields = list(
-    formula = "formula", Xy = "list", datarg = "character",
-    regressor = "Regressor"
-    )
+    formula = "formula",
+    Xy = "list",
+    regressor = "XyRegressor",
+    feature_names = "character",
+    name = "ANY"
   )
+)
 
 
 FormulaRegressor$methods(
 
   initialize = function(formula, data) {
-
     .self$formula <- formula
     .self$Xy <- get_X_y(formula, data)
-    .self$datarg <- deparse(substitute(data))
+    .self$feature_names <- colnames(model.matrix(formula, data))
+  },
 
+  coef = function() {
+    coef_ <- c(.self$regressor$coef_)
+    setNames(coef_, .self$feature_names)
   },
 
   show = function() {
 
-    cat("\nCall:\n")
-    cat(class(.self), "(formula = ", deparse(.self$formula), ", data = ", .self$datarg, ")\n\n", sep = "")
-    cat("Coefficients:\n")
-    base::print(.self$regressor$coef_)
+    # Create named coefficients vector.
+    named_coefs <- c(.self$regressor$coef_)
+    named_coefs <- setNames(named_coefs, .self$feature_names)
 
+    cat("\nCall:\n")
+    cat(class(.self), "(formula = ", deparse(.self$formula), ", data = ", .self$name, ")\n\n", sep = "")
+    cat("Coefficients:\n")
+    base::print(.self$coef())
   }
 )
 
@@ -175,13 +175,12 @@ linreg$methods(
 
   #' @export
   initialize = function(formula, data) {
-
+    .self$name <- deparse(substitute(data))
     callSuper(formula = formula, data = data)
     .self$regressor <- LinearRegressor()
     .self$regressor$fit(X = .self$Xy$X, y = .self$Xy$y)
 
   }
-
 )
 
 
@@ -209,11 +208,42 @@ ridgereg$methods(
 
   #' @export
   initialize = function(formula, data, lambda = 1) {
-
+    .self$name <- deparse(substitute(data))
     callSuper(formula = formula, data = data)
     .self$regressor <- RidgeRegressor(lambda = lambda)
     .self$regressor$fit(X = .self$Xy$X, y = .self$Xy$y)
+  }
+)
 
+
+# ------------------------   Generic Functions --------------------------------
+
+#' Predict method for Formula Regressors
+#'
+#' @param object. Object of class inheriting from "FormulaRegressor"
+#' @param newdata. An optional data frame in which to look for variables with
+#' which to predict. If omitted, the fitted values are used.
+#'
+#' @export
+predict.FormulaRegressor <- function(object, newdata = NULL) {
+
+  if (is.null(newdata)) {
+    X <- object$Xy$X
+  } else {
+    X <- get_X_y(object$formula, newdata)$X
   }
 
-)
+  object$regressor$predict(X)
+}
+
+#' Extract Model Coefficients
+#'
+#' @param object Object of class inheriting from "FormulaRegressor"
+#'
+#' #' @export
+coef.FormulaRegressor <- function(object, ...) {
+  object$coef()
+}
+
+
+
