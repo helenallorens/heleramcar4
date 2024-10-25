@@ -1,0 +1,194 @@
+---
+title: "flight_delay"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{flight_delay}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Predictive Modeling of Flight Delays Using `ridgereg()`
+
+The purpose of this vignette is to showcase the use of the `ridgereg()` function to predict flight delays using the **nycflights13** dataset. This example demonstrates how to preprocess the data, incorporate weather features, and split the data for training, validation, and testing.
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(heleramcar4)
+library(nycflights13)
+library(caret)
+library(ggplot2)
+
+set.seed(1)
+```
+
+## 1. Load and Clean the Dataset
+
+We'll begin by loading the `flights` and `weather` datasets from the **nycflights13** package and remove variables that don't provide predictive value.
+
+The `flights` dataset contains two delay variables: `dep_delay` (departure delay) and `arr_delay` (arrival delay). We'll use `dep_delay` as the target variable for our prediction since it's often the most relevant when discussing flight delays.
+
+Next, we will discard variables that are not available when predicting departure delays, such as `arr_time`, `arr_delay`, `air_time`, and `dep_time`. Additionally, we remove variables that provide no predictive information:
+
+-   **carrier:** Two-letter carrier abbreviation.
+-   **flight:** Flight number.
+-   **tailnum:** Plane tail number.
+
+The following columns will be retained for modeling:
+
+```{r}
+# Define the subset of features from the flights dataset.
+flights_features <- c(
+  "dep_delay",  # Target variable
+  "sched_dep_time", 
+  "sched_arr_time", 
+  "origin",
+  "dest",
+  "distance",
+  "time_hour"
+)
+```
+
+## 2. Merge with Weather Data
+
+To improve prediction accuracy, we'll join the `weather` dataset with the `flights` dataset using the columns `origin` and `time_hour`. Only the selected features will be used in this merge.
+
+```{r}
+# Merge the weather data into the flights dataset.
+X_merged <- merge(
+  x = flights[flights_features], 
+  y = weather, 
+  by = c("origin", "time_hour"),  
+  all.x = TRUE
+)
+```
+
+Next, we'll remove columns with more than 10% missing values, and rows with any missing values will also be dropped.
+
+```{r}
+# Drop columns with more than 10% missing values, and remove rows with any missing data.
+nan_count <- sapply(X_merged, function(y) sum(is.na(y)))
+nan_pct <- (nan_count / nrow(X_merged)) * 100
+drops <- names(nan_pct[nan_pct > 10])
+X_nanless <- na.omit(X_merged[, !names(X_merged) %in% drops])
+```
+
+```{r echo=TRUE}
+# Sanity check to ensure all missing values are removed.
+nan_count <- sum(sapply(X_nanless, function(y) sum(is.na(y))))
+sprintf("The total number of missing values is: %s", nan_count)
+```
+
+## 3. Split Data into Train, Validation, and Test Sets
+
+Using the `caret` package, we'll split the cleaned dataset into training (80%), validation (15%), and test sets (5%).
+
+We will only use the numerical columns from this point onward to simplify the modeling process.
+
+```{r}
+# Select only the numerical columns for modeling.
+nums <- unlist(lapply(X_nanless, is.numeric), use.names = FALSE)  
+X_num <- X_nanless[, nums]
+```
+
+We then create the train-validation-test split:
+
+```{r}
+# Split the dataset into training (80%), validation (15%), and test (5%) sets.
+
+# First split: 80% for training, 20% for validation + test.
+train_index <- createDataPartition(X_num$dep_delay, list = FALSE, p = .80, times = 1)
+X_train <- X_num[train_index, ]
+X_val_and_test <- X_num[-train_index, ]
+
+# Second split: 75% of the remaining 20% for validation, 25% for test.
+val_index <- createDataPartition(X_val_and_test$dep_delay, list = FALSE, p = .75, times = 1)
+X_val <- X_val_and_test[val_index, ]
+X_test <- X_val_and_test[-val_index, ]
+```
+
+## 4. Finding the Optimal Value of λ
+
+The function `create_ridge_objective_function()` creates an objective function to evaluate the ridge regression model for different values of λ (regularization parameter). The goal is to minimize the RMSE (Root Mean Squared Error) on the validation dataset.
+
+```{r}
+#' Create Ridge Objective Function
+#'
+#' This function generates an objective function that can be used to evaluate the 
+#' performance of a ridge regression model on a validation set for a given value of lambda.
+#'
+#' @param formula The formula for the ridge regression model (e.g., dep_delay ~ .).
+#' @param train The training dataset used to fit the ridge regression model.
+#' @param val The validation dataset used to evaluate the model's performance.
+#' @return A function that takes lambda as input and returns the RMSE (root mean squared error)
+#'         for the predictions made by the ridge regression model on the validation data.
+#'
+#' @details The objective function returned by this function fits a ridge regression model
+#'          using the training data and then predicts the target variable on the validation data.
+#'          The model's performance is evaluated using RMSE.
+create_ridge_objective_function <- function(formula, train, val) {
+  
+  # This inner function takes a lambda value, fits the ridge regression model,
+  # predicts on the validation set, and returns the RMSE of the predictions.
+  objective_function <- function(lambda) {
+    ridge <- ridgereg(formula = formula, data = train, lambda = lambda) 
+    pred <- predict(ridge, newdata = val)                               
+    obs <- val[[all.vars(formula)[1]]]                                  
+    RMSE(pred = pred, obs = obs)                                        
+  }
+
+  return(objective_function)
+}
+```
+
+The next step is to loop over a grid of lambda values and select the one with the best (lowest) RMSE.
+
+```{r}
+# Create the objective function for ridge regression using the training and validation sets.
+# This objective function will return the RMSE for each value of lambda.
+objective <- create_ridge_objective_function(
+  formula = dep_delay ~ .,   # Model formula: predict dep_delay using all other variables
+  train = X_train,           # Training data
+  val = X_val                # Validation data
+)
+
+# Define a grid of lambda values to test, ranging from 1 to 50 with a step of 1.
+lambda_grid <- seq(1, 50, by = 1)
+
+# Initialize an empty vector to store the RMSE results for each lambda value.
+results <- c()
+
+# Loop through each lambda value in the grid.
+for (lambda in lambda_grid) {
+  # Evaluate the model for the current lambda value and store the resulting RMSE.
+  results <- c(results, objective(lambda))
+}
+
+# Retrieve best lambda
+best_lambda <- lambda_grid[which.min(results)]
+
+# Plot the RMSE values as a function of lambda.
+plot(lambda_grid, results, type = "b", xlab = "Lambda", ylab = "RMSE", main = "RMSE vs Lambda")
+
+```
+
+The lowest value corresponds to λ = 32.
+
+## 5. Predict on test set
+
+Once we found a good value for λ, we can use it to predict the test dataset.
+
+```{r}
+
+ridge <- ridgereg(formula = dep_delay ~ ., data = X_train, lambda = best_lambda) 
+pred <- predict(ridge, newdata = X_test)
+obs <- X_test[["dep_delay"]]                                  
+rmse <- RMSE(pred = pred, obs = obs)
+
+print(sprintf("The test RMSE is %s", rmse))
+```
