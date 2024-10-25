@@ -1,4 +1,3 @@
-
 #' Auxiliary function for getting X and y.
 #'
 #' @param formula an object of class "formula" .
@@ -27,13 +26,10 @@ XyRegressor <- setRefClass(
 
 XyRegressor$methods(
 
-  #' Predicts input data X.
-  #'
-  #' @param X Input data
-  #' @return Predicted values
-  #' @export
   predict = function(X) {
+    "Predicts input data X"
     X %*% .self$coef_
+
     }
 )
 
@@ -55,18 +51,13 @@ RidgeRegressor <- setRefClass(
 
 RidgeRegressor$methods(
 
-  #' @export
   initialize = function(lambda = 1) {
     .self$lambda <- lambda
   },
 
-  #' Fits Ridge Regressor to X and y.
-  #'
-  #' @param X Design matrix
-  #' @param y Target values
-  #'
-  #' @export
+
   fit = function(X, y) {
+    "Fits Ridge Regressor to X and y."
     .self$coef_ <- (
       as.vector(solve(t(X) %*% X + diag(.self$lambda, ncol(X))) %*% t(X) %*% y)
       )
@@ -91,13 +82,8 @@ LinearRegressor <- setRefClass(
 
 LinearRegressor$methods(
 
-  #' Fits Linear Regressor to X and y.
-  #'
-  #' @param X Design matrix
-  #' @param y Target values
-  #'
-  #' @export
   fit = function(X, y) {
+    "Fits Linear Regressor to X and y."
     .self$coef_ <- as.vector(solve(t(X) %*% X) %*% t(X) %*% y)
   }
 )
@@ -173,7 +159,6 @@ linreg <- setRefClass("linreg", contains = "FormulaRegressor")
 
 linreg$methods(
 
-  #' @export
   initialize = function(formula, data) {
     .self$name <- deparse(substitute(data))
     callSuper(formula = formula, data = data)
@@ -206,7 +191,6 @@ ridgereg <- setRefClass("ridgereg", contains = "FormulaRegressor")
 
 ridgereg$methods(
 
-  #' @export
   initialize = function(formula, data, lambda = 1) {
     .self$name <- deparse(substitute(data))
     callSuper(formula = formula, data = data)
@@ -244,6 +228,3 @@ predict.FormulaRegressor <- function(object, newdata = NULL) {
 coef.FormulaRegressor <- function(object, ...) {
   object$coef()
 }
-
-
-
