@@ -1,0 +1,206 @@
+---
+title: "ridgereg"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ridgereg}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+```{r setup}
+library(heleramcar4)
+```
+
+
+|                                                             |
+|:------------------------------------------------------------|
+| Vignette: A Simple Implementation of Ridge Regression in R  |
+
+
+### Introduction
+
+This vignette will guide you through using the custom ridgereg() function, which implements ridge regression, a regularization method useful when we have a large number of covariates or multicollinearity in our dataset. For our demonstration, we will use the `BostonHousing` dataset from the `mlbench` package to create and evaluate a ridge regression model.
+
+
+### Loading Required Libraries
+
+Before we proceed, we have to load the required packages:
+
+```{r, warning=FALSE}
+library(caret)
+library(mlbench)
+library(elasticnet)
+```
+
+
+### Data Preparation
+
+We will use the `BostonHousing` dataset, which has housing data for Boston suburbs. This dataset will be divided into training and test sets for model evaluation.
+
+```{r}
+# Load the dataset
+data("BostonHousing")
+
+# Split the data into training (80%) and test (20%) sets
+set.seed(123)  # For reproducibility
+trainIndex <- createDataPartition(BostonHousing$medv, p = 0.8, list = FALSE)
+trainData <- BostonHousing[trainIndex, ]
+testData <- BostonHousing[-trainIndex, ]
+```
+
+
+### Fitting Linear Regression Models
+
+We'll start by fitting a standard linear regression model, which serves as a baseline. Then, we use forward selection, a stepwise regression method that iteratively adds predictors based on their statistical significance.
+
+```{r}
+# Standard linear regression model
+lm_model <- lm(medv ~ ., data = trainData)
+
+# Forward selection linear regression using caret
+control <- trainControl(method = "cv", number = 10)
+forward_model <- train(medv ~ ., data = trainData, method = "leapForward",
+                       trControl = control)
+
+# Summarize the results
+summary(lm_model)
+print(forward_model)
+```
+
+
+##### Evaluate Performance on Training Set
+
+To gauge how well these models fit the training data, we calculate metrics like the Root Mean Squared Error (RMSE) and R-squared. These measures provide insight into the prediction accuracy and the proportion of variance explained by the model, respectively.
+
+```{r}
+# Performance on the training set
+lm_train_pred <- predict(lm_model, newdata = trainData)
+lm_train_rmse <- RMSE(lm_train_pred, trainData$medv)
+lm_train_r2 <- R2(lm_train_pred, trainData$medv)
+
+forward_train_pred <- predict(forward_model, newdata = trainData)
+forward_train_rmse <- RMSE(forward_train_pred, trainData$medv)
+forward_train_r2 <- R2(forward_train_pred, trainData$medv)
+
+cat("Linear Model - Training RMSE:", lm_train_rmse, "R2:", lm_train_r2, "\n")
+cat("Forward Selection Model - Training RMSE:", forward_train_rmse, "R2:", forward_train_r2, "\n")
+```
+
+
+### Implementing Ridge Regression with ridgereg()
+
+The ´ridgereg()` function performs ridge regression with a given lambda parameter, which controls the regularization strength. Higher values of lambda will shrink the coefficients more, reducing the risk of overfitting but potentially underfitting if lambda is too high.
+
+```{r}
+# Training ridge regression models for different lambda values
+# Training ridge regression models for different lambda values
+lambda_values <- seq(0, 5, by = 0.1)
+ridge_models <- lapply(lambda_values, function(lam) {
+  ridgereg(medv ~ ., data = trainData, lambda = lam)
+})
+
+# Evaluate models on the training set
+ridge_performance <- lapply(ridge_models, function(model) {
+  ridge_pred <- predict(model, newdata = trainData)
+  
+  # Compute RMSE and R-squared
+  rmse_value <- RMSE(ridge_pred, trainData$medv)
+  r2_value <- R2(ridge_pred, trainData$medv)
+  
+  # Return as a named list
+  list(RMSE = rmse_value, R2 = r2_value)
+})
+
+# Extracting RMSE and R-squared values
+ridge_rmse <- sapply(ridge_performance, function(x) x$RMSE)
+ridge_r2 <- sapply(ridge_performance, function(x) x$R2)
+
+# Print RMSE and R-squared values for each lambda
+# Print RMSE and R-squared values together for each lambda
+results <- data.frame(
+  Lambda = lambda_values,
+  RMSE = ridge_rmse,
+  R2 = ridge_r2
+)
+
+# Display some of the results
+print(head(results))
+```
+
+
+### Finding Optimal Lambda Using Cross-Validation
+
+Using 10-fold cross-validation, we search for the optimal value of λ that minimizes prediction error. This method involves splitting the training set into ten parts, training the model on nine parts, and validating it on the remaining part, rotating through all splits.
+
+```{r}
+# Tuning lambda using 10-fold cross-validation
+set.seed(123)
+cv_control <- trainControl(method = "cv", number = 10)
+ridge_cv_model <- train(medv ~ ., 
+                        data = trainData, 
+                        method = "ridge",
+                        tuneGrid = expand.grid(lambda = lambda_values),
+                        trControl = cv_control)
+best_lambda <- ridge_cv_model$bestTune$lambda
+cat("Best lambda:", best_lambda, "\n")
+
+```
+
+
+### Evaluate the Performance of All Three Models on the Test Dataset
+
+```{r}
+# Linear regression predictions
+lm_test_pred <- predict(lm_model, newdata = testData)
+lm_test_rmse <- RMSE(lm_test_pred, testData$medv)
+
+# Forward selection predictions
+forward_test_pred <- predict(forward_model, newdata = testData)
+forward_test_rmse <- RMSE(forward_test_pred, testData$medv)
+
+# Ridge regression predictions with the best lambda
+best_ridge_model <- ridgereg(medv ~ ., data = trainData, lambda = best_lambda)
+ridge_test_pred <- predict(best_ridge_model, newdata = testData)
+ridge_test_rmse <- RMSE(ridge_test_pred, testData$medv)
+
+# Displaying test RMSE results for comparison
+cat("Test RMSE - Linear Model:", lm_test_rmse, "\n")
+cat("Test RMSE - Forward Selection:", forward_test_rmse, "\n")
+cat("Test RMSE - Ridge Regression:", ridge_test_rmse, "\n")
+
+```
+
+
+### Conclusion
+
+In this vignette, we demonstrated the use of ridgereg() for ridge regression and compared its predictive performance with standard linear regression approaches. The test results showed that both the Linear Model and Ridge Regression had the same Test RMSE (4.588948), while the Forward Selection model had a higher Test RMSE (5.19483).
+
+This suggests that Ridge Regression did not provide a significant improvement over the ordinary least squares solution. The fact that the optimal lambda found through cross-validation was 0 indicates that the regularization penalty was not needed for this dataset, likely because multicollinearity was not a significant issue, or the data did not benefit from regularization.
+
+The higher Test RMSE for the Forward Selection model suggests that it may have overfitted the training data, resulting in poorer generalization to the test data.
+
+Although it did not outperform the Linear Model here, Ridge Regression can still be useful in cases with high multicollinearity, many predictors, or when controlling for overfitting is a priority.
+
+In conclusion, for this dataset, the standard Linear Model provided satisfactory results, and Ridge Regression did not show additional benefits. However, exploring a wider range of lambda values or different regularization techniques could still be worthwhile in other contexts or datasets.
+
+*borrar a partir de aquí*
+
+- **Linear Regression**: The standard linear model serves as a baseline, showing reasonable performance but potentially suffering from issues such as multicollinearity if predictors are correlated.
+
+- **Forward Selection**: This model may improve prediction accuracy by selecting only the most significant predictors, reducing overfitting. However, the method is still susceptible to noise and can perform inconsistently depending on the dataset.
+
+- **Ridge Regression**: Introducing a regularization term helps prevent overfitting by shrinking coefficients, especially in situations where predictors are highly correlated or the number of predictors is large. Ridge regression typically performs better than standard linear regression in such cases, resulting in lower test RMSE.
+
+Overall, ridge regression demonstrates its value as a robust modeling technique for datasets with multicollinearity, making it a useful alternative to ordinary least squares regression. Choosing an appropriate λ through cross-validation is crucial for optimizing model performance.
+
