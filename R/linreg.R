@@ -367,3 +367,40 @@ residuals.FormulaRegressor <- function(x, ...) x$resid()
 #' @param ... signature compatibility arguments
 #' @export
 summary.FormulaRegressor <- function(x, ...) x$summary()
+
+
+#---------------------visualize_airport_delays()--------------------------------
+library(nycflights13)
+library(dplyr)
+library(ggplot2)
+
+#' Visualize Airport Delays
+#'
+#' This function creates a plot visualizing the mean delay of flights
+#' for different airports, represented by their longitude and latitude.
+#' The data is sourced from the `nycflights13` package, and the function
+#' utilizes `dplyr` for data manipulation and `ggplot2` for visualization.
+#'
+#' @export
+visualize_airport_delays <- function() {
+  mean_delays <- flights %>%
+    filter(!is.na(dep_delay)) %>%
+    group_by(dest) %>%
+    summarise(mean_delay = mean(dep_delay, na.rm = TRUE))
+
+  delays_with_location <- mean_delays %>%
+    inner_join(airports, by = c("dest" = "faa")) %>%
+    select(dest, mean_delay, lat, lon)
+
+  ggplot(delays_with_location, aes(x = lon, y = lat, color = mean_delay, size = mean_delay)) +
+    geom_point(alpha = 0.7) +
+    scale_color_gradient(low = "blue", high = "red") +
+    labs(
+      title = "Mean Flight Delays by Airport",
+      x = "Longitude",
+      y = "Latitude",
+      color = "Mean Delay (mins)",
+      size = "Mean Delay"
+    ) +
+    theme_minimal()
+}

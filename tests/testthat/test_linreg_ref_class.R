@@ -1,3 +1,4 @@
+library(testthat)
 data("iris")
 
 Polygon <- setRefClass("Polygon", fields = c("sides"))
@@ -14,12 +15,14 @@ test_that("class is correct", {
   expect_true(class(linreg_mod)[1] == "linreg")
 })
 
+
 test_that("print() method works", {
   linreg_mod <- linreg$new(Petal.Length~Sepal.Width+Sepal.Length, data=iris)
 
   expect_output(linreg_mod$print(),"linreg\\(formula = Petal\\.Length ~ Sepal\\.Width \\+ Sepal\\.Length, data = iris\\)")
   expect_output(linreg_mod$print(),"( )*\\(Intercept\\)( )*Sepal\\.Width( )*Sepal\\.Length")
 })
+
 
 test_that("pred() method works", {
   linreg_mod <- linreg$new(Petal.Length~Sepal.Width+Sepal.Length, data=iris)
@@ -48,4 +51,3 @@ test_that("summary() method works", {
   expect_output(linreg_mod$summary(), "Sepal.Length( )*1.7[0-9]*( )*0.0[0-9]*( )*27.5[0-9]*( )*.*( )*\\*\\*\\*")
   expect_output(linreg_mod$summary(), "Residual standard error: 0.6[0-9]* on 147 degrees of freedom")
 })
-
