@@ -40,7 +40,6 @@ Before we proceed, we have to load the required packages:
 ```{r, warning=FALSE}
 library(caret)
 library(mlbench)
-library(elasticnet)
 ```
 
 
@@ -193,14 +192,3 @@ The higher Test RMSE for the Forward Selection model suggests that it may have o
 Although it did not outperform the Linear Model here, Ridge Regression can still be useful in cases with high multicollinearity, many predictors, or when controlling for overfitting is a priority.
 
 In conclusion, for this dataset, the standard Linear Model provided satisfactory results, and Ridge Regression did not show additional benefits. However, exploring a wider range of lambda values or different regularization techniques could still be worthwhile in other contexts or datasets.
-
-*borrar a partir de aquí*
-
-- **Linear Regression**: The standard linear model serves as a baseline, showing reasonable performance but potentially suffering from issues such as multicollinearity if predictors are correlated.
-
-- **Forward Selection**: This model may improve prediction accuracy by selecting only the most significant predictors, reducing overfitting. However, the method is still susceptible to noise and can perform inconsistently depending on the dataset.
-
-- **Ridge Regression**: Introducing a regularization term helps prevent overfitting by shrinking coefficients, especially in situations where predictors are highly correlated or the number of predictors is large. Ridge regression typically performs better than standard linear regression in such cases, resulting in lower test RMSE.
-
-Overall, ridge regression demonstrates its value as a robust modeling technique for datasets with multicollinearity, making it a useful alternative to ordinary least squares regression. Choosing an appropriate λ through cross-validation is crucial for optimizing model performance.
-

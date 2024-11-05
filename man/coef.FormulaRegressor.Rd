@@ -4,12 +4,10 @@
 \alias{coef.FormulaRegressor}
 \title{Extract Model Coefficients}
 \usage{
-\method{coef}{FormulaRegressor}(object, ...)
+\method{coef}{FormulaRegressor}(x, ...)
 }
 \arguments{
-\item{object}{Object of class inheriting from "FormulaRegressor"
-
-#' @export}
+\item{object}{Object of class inheriting from "FormulaRegressor"}
 }
 \description{
 Extract Model Coefficients

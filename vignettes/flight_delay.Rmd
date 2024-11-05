@@ -78,6 +78,13 @@ drops <- names(nan_pct[nan_pct > 10])
 X_nanless <- na.omit(X_merged[, !names(X_merged) %in% drops])
 ```
 
+The year column will also be removed since every record belongs to 2013.
+
+```{r}
+# Drop year column
+X_nanless <- X_nanless[, -which(names(X_nanless) == "year")]
+```
+
 ```{r echo=TRUE}
 # Sanity check to ensure all missing values are removed.
 nan_count <- sum(sapply(X_nanless, function(y) sum(is.na(y))))
@@ -158,7 +165,7 @@ objective <- create_ridge_objective_function(
 )
 
 # Define a grid of lambda values to test, ranging from 1 to 50 with a step of 1.
-lambda_grid <- seq(1, 50, by = 1)
+lambda_grid <- seq(100, 500, by = 20)
 
 # Initialize an empty vector to store the RMSE results for each lambda value.
 results <- c()
@@ -177,7 +184,7 @@ plot(lambda_grid, results, type = "b", xlab = "Lambda", ylab = "RMSE", main = "R
 
 ```
 
-The lowest value corresponds to λ = 32.
+The lowest value corresponds to λ = 270.
 
 ## 5. Predict on test set
 

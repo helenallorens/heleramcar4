@@ -4,9 +4,9 @@
 \name{heleramcar4-package}
 \alias{heleramcar4}
 \alias{heleramcar4-package}
-\title{heleramcar4: Implementation of a linear regression package}
+\title{heleramcar4: Implementation of a linear and ridge regression package}
 \description{
-Implementation of a linear regression package.
+Implementation of a linear and ridge regression package.
 }
 \seealso{
 Useful links:
