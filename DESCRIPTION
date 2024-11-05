@@ -26,5 +26,6 @@ Imports:
   mlbench,
   leaps,
   elasticnet,
+  MASS,
   methods
   

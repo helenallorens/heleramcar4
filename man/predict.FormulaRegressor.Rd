@@ -7,9 +7,9 @@
 \method{predict}{FormulaRegressor}(object, newdata = NULL)
 }
 \arguments{
-\item{object.}{Object of class inheriting from "FormulaRegressor"}
+\item{object}{Object of class inheriting from "FormulaRegressor"}
 
-\item{newdata.}{An optional data frame in which to look for variables with
+\item{newdata}{An optional data frame in which to look for variables with
 which to predict. If omitted, the fitted values are used.}
 }
 \description{

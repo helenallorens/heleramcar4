@@ -4,10 +4,10 @@
 \alias{summary.FormulaRegressor}
 \title{Returns summary for :class:`FormulaRegressor` object.}
 \usage{
-\method{summary}{FormulaRegressor}(x, ...)
+\method{summary}{FormulaRegressor}(object, ...)
 }
 \arguments{
-\item{x}{FormulaRegressor object}
+\item{object}{FormulaRegressor object}
 
 \item{...}{signature compatibility arguments}
 }

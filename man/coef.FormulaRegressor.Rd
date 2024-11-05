@@ -7,7 +7,9 @@
 \method{coef}{FormulaRegressor}(x, ...)
 }
 \arguments{
-\item{object}{Object of class inheriting from "FormulaRegressor"}
+\item{x}{Object of class inheriting from "FormulaRegressor"}
+
+\item{...}{signature compatibility arguments}
 }
 \description{
 Extract Model Coefficients

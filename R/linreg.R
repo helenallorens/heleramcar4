@@ -327,8 +327,8 @@ pred.FormulaRegressor <- function(x, ...) predict(x, ...)
 
 #' Predict method for Formula Regressors
 #'
-#' @param object. Object of class inheriting from "FormulaRegressor"
-#' @param newdata. An optional data frame in which to look for variables with
+#' @param object Object of class inheriting from "FormulaRegressor"
+#' @param newdata An optional data frame in which to look for variables with
 #' which to predict. If omitted, the fitted values are used.
 #'
 #' @export
@@ -347,7 +347,8 @@ predict.FormulaRegressor <- function(object, newdata = NULL) {
 
 #' Extract Model Coefficients
 #'
-#' @param object Object of class inheriting from "FormulaRegressor"
+#' @param x Object of class inheriting from "FormulaRegressor"
+#' @param ... signature compatibility arguments
 #'
 #' @export
 coef.FormulaRegressor <- function(x, ...) x$coef()
@@ -363,10 +364,10 @@ residuals.FormulaRegressor <- function(x, ...) x$resid()
 
 #' Returns summary for :class:`FormulaRegressor` object.
 #'
-#' @param x FormulaRegressor object
+#' @param object FormulaRegressor object
 #' @param ... signature compatibility arguments
 #' @export
-summary.FormulaRegressor <- function(x, ...) x$summary()
+summary.FormulaRegressor <- function(object, ...) object$summary()
 
 
 #---------------------visualize_airport_delays()--------------------------------
@@ -380,6 +381,7 @@ library(ggplot2)
 #' for different airports, represented by their longitude and latitude.
 #' The data is sourced from the `nycflights13` package, and the function
 #' utilizes `dplyr` for data manipulation and `ggplot2` for visualization.
+#'
 #'
 #' @export
 visualize_airport_delays <- function() {
